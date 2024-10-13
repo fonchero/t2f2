@@ -1,0 +1,118 @@
+externalDBs:
+  - name: Migracion
+    engine: mssql  # Motor de la base de datos (PostgreSQL, MySQL, Oracle, etc.)
+    connection:
+      host: your_server_address
+      port: 1433  # Cambia según el motor de la base de datos (ej. 3306 para MySQL, 5432 para PostgreSQL)
+      username: your_username
+      password: your_password
+      database: your_database_name
+      driver: ODBC Driver 17 for SQL Server  # Solo para SQL Server (se puede omitir para otros motores)
+    schedule:
+      frequency: "1d"  # Frecuencia de sincronización diaria
+      time: "02:00"  # Hora de la sincronización diaria
+    tables:
+      - movimientos_migratorios:
+          schema:
+            id_movimiento:
+              type: SERIAL
+              primary_key: true
+            nombres:
+              type: VARCHAR(255)
+            paterno:
+              type: VARCHAR(255)
+            materno:
+              type: VARCHAR(255)
+            nacionalidad:
+              type: VARCHAR(100)
+            documento:
+              type: VARCHAR(50)
+            numero_doc:
+              type: VARCHAR(50)
+            fecha_control:
+              type: TIMESTAMP
+            tipo_mov:
+              type: VARCHAR(10)
+            pais_movimiento:
+              type: VARCHAR(100)
+            dependencia:
+              type: VARCHAR(255)
+          ingestion:
+            strategy: replace  # La estrategia puede ser "replace" (reemplazar todos los datos) o "incremental" (solo nuevos registros)
+            key: id_movimiento  # Campo clave para detectar duplicados si es "incremental"
+            batch_size: 1000  # Tamaño de lotes a procesar en cada sincronización
+            filters:  # Filtros opcionales para la consulta
+              - field: fecha_control
+                condition: ">"  # Condición para filtrar datos recientes
+                value: "CURRENT_DATE - INTERVAL '1 day'"
+
+  - name: Compras
+    engine: mysql  # Motor de base de datos MySQL
+    connection:
+      host: your_mysql_server
+      port: 3306
+      username: mysql_user
+      password: mysql_password
+      database: compras_db
+    schedule:
+      frequency: "7d"  # Sincronización semanal
+      time: "01:00"  # Hora de la sincronización semanal
+    tables:
+      - compras_clientes:
+          schema:
+            id_compra:
+              type: SERIAL
+              primary_key: true
+            id_cliente:
+              type: VARCHAR(50)
+            producto:
+              type: VARCHAR(255)
+            cantidad:
+              type: INT
+            precio:
+              type: DECIMAL(10,2)
+            fecha_compra:
+              type: TIMESTAMP
+          ingestion:
+            strategy: incremental
+            key: id_compra
+            batch_size: 500
+            filters:
+              - field: fecha_compra
+                condition: ">"
+                value: "CURRENT_DATE - INTERVAL '7 day'"
+
+fileSources:
+  - name: FTP_Canales
+    source_type: ftp
+    connection:
+      host: ftp.canales.com
+      port: 21
+      username: ftp_user
+      password: ftp_password
+    schedule:
+      frequency: "1d"  # Sincronización diaria
+      time: "03:00"
+    file_format: "video"  # Tipo de archivo que se procesará
+    ingestion:
+      target_table: videos_procesados  # Tabla en la que se almacenarán los resultados procesados
+      file_path: /videos/  # Directorio donde se encuentran los archivos
+      processing_pipeline:
+        - extract_audio
+        - transcribe_audio
+        - detect_faces
+        - detect_objects
+
+  - name: FileServer_Documentos
+    source_type: fileserver
+    connection:
+      path: /mnt/documents/  # Ruta local o montada en el servidor
+    schedule:
+      frequency: "1d"
+      time: "04:00"
+    file_format: "pdf"  # Tipo de archivo que se procesará
+    ingestion:
+      target_table: archivos  # Tabla de archivos procesados
+      processing_pipeline:
+        - ocr_document
+        - extract_metadata
