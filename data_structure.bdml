@@ -14,10 +14,11 @@ Table archivos {
   fecha_publicacion TIMESTAMP // Fecha en la que fue publicado el archivo (si aplica)
   coordenadas_geograficas JSONB // Para almacenar la ubicación geográfica del archivo
   fecha_ingreso TIMESTAMP [default: `CURRENT_TIMESTAMP`]
-  estado VARCHAR(50) [default: 'pendiente'] // Estado de procesamiento
+  estado VARCHAR(50) [default: 'pendiente'] // Estado de procesamiento (ej. 'pendiente', 'procesado', 'error')
 
   Indexes {
     nombre_archivo
+    tipo_archivo // Recomendación: agregar índice en tipo_archivo para optimizar las consultas.
   }
 }
 
@@ -51,6 +52,8 @@ Table personas_detectadas {
 
   Indexes {
     id_persona_original
+    tipo_deteccion // Recomendación: agregar índice en tipo_deteccion.
+    nombre_asociado // Recomendación: agregar índice en nombre_asociado.
   }
 }
 
@@ -60,6 +63,10 @@ Table objetos_detectados {
   tipo_objeto VARCHAR(100) // Vehículo, edificio, etc.
   coordenadas_objeto JSONB
   fecha_detectado TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    tipo_objeto // Recomendación: agregar índice en tipo_objeto.
+  }
 }
 
 Table eventos {
@@ -84,6 +91,7 @@ Table correlaciones {
   Indexes {
     id_entidad
     id_evento
+    tipo_relacion // Recomendación: agregar índice en tipo_relacion.
   }
 }
 
@@ -120,4 +128,8 @@ Table videos_procesados {
   duracion_segundos INT
   metadatos JSONB
   fecha_procesado TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    duracion_segundos // Recomendación: agregar índice en duracion_segundos.
+  }
 }
