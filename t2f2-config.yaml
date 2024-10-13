@@ -1,3 +1,49 @@
+processes:
+  audio:
+    target_table: audios_procesados
+    process_steps:
+      - voice_detection
+      - language_identification
+      - speech_to_text
+      - speaker_hunting
+      - speaker_identification
+      - event_detection
+      - sentiment_analysis
+
+  video:
+    target_table: videos_procesados
+    process_steps:
+      - audio_extraction
+      - thumbnail_extraction
+      - metadata_extraction
+      - face_detection
+      - facial_composite_extraction
+      - race_recognition
+      - face_matching
+      - object_detection
+      - ocr
+      - location_recognition
+
+  image:
+    target_table: imagenes_procesadas
+    process_steps:
+      - metadata_extraction
+      - face_detection
+      - facial_composite_extraction
+      - face_matching
+      - object_detection
+      - ocr
+      - location_recognition
+
+  document:
+    target_table: documentos_procesados
+    process_steps:
+      - indexing
+      - metadata_extraction
+      - ocr
+      - semantic_analysis
+      - enrichment
+      
 externalDBs:
   - name: Migracion
     engine: mssql  # Motor de la base de datos (PostgreSQL, MySQL, Oracle, etc.)
