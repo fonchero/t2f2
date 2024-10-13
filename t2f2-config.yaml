@@ -1,3 +1,4 @@
+# Procesos globales por tipo de archivo
 processes:
   audio:
     target_table: audios_procesados
@@ -128,37 +129,99 @@ externalDBs:
                 condition: ">"
                 value: "CURRENT_DATE - INTERVAL '7 day'"
 
+# Fuentes de archivos
 fileSources:
-  - name: FTP_Canales
+  - name: FTP_Audios
     source_type: ftp
     connection:
-      host: ftp.canales.com
+      host: ftp.audios.com
       port: 21
       username: ftp_user
       password: ftp_password
-    schedule:
-      frequency: "1d"  # Sincronización diaria
-      time: "03:00"
-    file_format: "video"  # Tipo de archivo que se procesará
+    schedule: "0 4 * * *"
+    file_format: "audio"
     ingestion:
-      target_table: videos_procesados  # Tabla en la que se almacenarán los resultados procesados
-      file_path: /videos/  # Directorio donde se encuentran los archivos
-      processing_pipeline:
-        - extract_audio
-        - transcribe_audio
-        - detect_faces
-        - detect_objects
+      file_path: /audios/  # No se especifica target_table, usa la tabla global "audios_procesados" de "processes"
 
-  - name: FileServer_Documentos
-    source_type: fileserver
+  - name: FTP_Videos
+    source_type: ftp
     connection:
-      path: /mnt/documents/  # Ruta local o montada en el servidor
-    schedule:
-      frequency: "1d"
-      time: "04:00"
-    file_format: "pdf"  # Tipo de archivo que se procesará
+      host: ftp.videos.com
+      port: 21
+      username: ftp_user
+      password: ftp_password
+    schedule: "0 3 * * *"
+    file_format: "video"
     ingestion:
-      target_table: archivos  # Tabla de archivos procesados
-      processing_pipeline:
-        - ocr_document
-        - extract_metadata
+      file_path: /videos/  # Al no especificar target_table, alimenta "videos_procesados" de la definición global
+
+  - name: FTP_Custom_Videos
+    source_type: ftp
+    connection:
+      host: ftp.customvideos.com
+      port: 21
+      username: ftp_user
+      password: ftp_password
+    schedule: "0 5 * * *"
+    file_format: "video"
+    ingestion:
+      target_table: custom_videos  # Como especifica target_table, usa esta tabla específica
+      file_path: /custom_videos/  # Validación que esta tabla exista en externalDBs
+
+  - name: FTP_Documentos
+    source_type: ftp
+    connection:
+      host: ftp.documentos.com
+      port: 21
+      username: ftp_user
+      password: ftp_password
+    schedule: "0 6 * * *"
+    file_format: "document"
+    ingestion:
+      file_path: /documentos/  # Sin target_table, usa "documentos_procesados" de la definición global
+
+# Fuente para deltas de actualización (diferente tratamiento)
+  - name: Personas_Delta
+    source_type: fileserver  # Puede ser un servidor de archivos o FTP
+    connection:
+      path: /mnt/deltas/personas/  # Ruta local o montada en el servidor
+    schedule: "0 3 * * *"  # Programación diaria a las 3 AM
+    file_format: "csv"  # Formato del archivo, que puede ser CSV o personalizado
+    ingestion:
+      target_table: personas  # Aquí alimentamos directamente la tabla "personas"
+      delimiter: "|"  # Separador utilizado en los archivos de texto
+      batch_size: 1000  # Tamaño de los lotes para ingesta
+      key: id_persona  # Clave primaria para detectar duplicados
+      fields_mapping:
+        id_persona: 0  # Mapeo de las posiciones de los campos en el archivo
+        nombres: 1
+        paterno: 2
+        materno: 3
+        nacionalidad: 4
+        documento: 5
+        numero_doc: 6
+        fecha_nacimiento: 7
+      is_delta_update: true  # Indicamos que este es un delta para actualizar una tabla existente
+  
+  # Fuente para reemplazo total (diferente tratamiento)
+  - name: MostWanted_Replacement
+    source_type: ftp
+    connection:
+      host: ftp.mostwanted.com
+      port: 21
+      username: ftp_user
+      password: ftp_password
+    schedule: "0 2 1 * *"  # Programación mensual el día 1 de cada mes a las 2 AM
+    file_format: "csv"  # Formato del archivo
+    ingestion:
+      target_table: most_wanted  # Tabla "most_wanted" en la que se reemplazarán los datos
+      delimiter: ","  # Separador utilizado en el archivo
+      batch_size: 500  # Tamaño de los lotes para ingesta
+      fields_mapping:
+        id_persona: 0  # Mapeo de las posiciones de los campos en el archivo
+        nombres: 1
+        alias: 2
+        delito: 3
+        recompensa: 4
+        nacionalidad: 5
+      is_replace: true  # Indicamos que este archivo reemplaza todos los datos de la tabla
