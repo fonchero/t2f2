@@ -1,65 +1,74 @@
-# Procesos globales por tipo de archivo
+# Definir procesos globales con códigos y herramientas open-source a utilizar
+global_processes:
+  P01: "Detección de voz en audios"  # Herramienta: Whisper AI (open-source)
+  P02: "Identificación del idioma"  # Herramienta: Whisper AI (open-source)
+  P03: "Conversión de voz a texto"  # Herramienta: Whisper AI (open-source)
+  P04: "Búsqueda de locutores"  # Herramienta: PyAnnote (open-source)
+  P05: "Identificación de locutores"  # Herramienta: PyAnnote (open-source)
+  P06: "Detección de eventos"  # Herramienta: VGGish (open-source)
+  P07: "Análisis de sentimiento"  # Herramienta: Transformers (Hugging Face - open-source)
+  P08: "Extracción de audio en videos"  # Herramienta: FFmpeg (open-source)
+  P09: "Generación de miniaturas"  # Herramienta: FFmpeg (open-source)
+  P10: "Extracción de metadatos"  # Herramienta: FFmpeg / ExifTool (open-source)
+  P11: "Detección de rostros"  # Herramienta: OpenCV / Dlib (open-source)
+  P12: "Extracción de compuestos faciales"  # Herramienta: OpenCV / Dlib (open-source)
+  P13: "Reconocimiento de raza"  # Herramienta: DeepFace / FairFace (open-source)
+  P14: "Coincidencia de rostros"  # Herramienta: FaceNet / DeepFace (open-source)
+  P15: "Detección de objetos"  # Herramienta: YOLO (open-source)
+  P16: "Reconocimiento óptico de caracteres (OCR)"  # Herramienta: Tesseract OCR (open-source)
+  P17: "Reconocimiento de ubicación"  # Herramienta: Mapillary Vistas (open-source)
+  P18: "Indexación de documentos"  # Herramienta: Apache Lucene (open-source)
+  P19: "Análisis semántico"  # Herramienta: Transformers NLP (BERT - open-source)
+  P20: "Enriquecimiento de datos"  # Herramienta: APIs de fuentes externas (solo open-source)
+  P21: "Conversión de audio a texto (Speech to Text)"  # Herramienta: Whisper AI (open-source)
+
+# Asignar procesos a los tipos de archivo con un array de códigos
 processes:
+  # Procesos para archivos de audio
   audio:
     target_table: audios_procesados
-    process_steps:
-      - voice_detection
-      - language_identification
-      - speech_to_text
-      - speaker_hunting
-      - speaker_identification
-      - event_detection
-      - sentiment_analysis
+    process_steps: 
+      # Procesos aplicados en orden utilizando las herramientas indicadas
+      [P01, P02, P03, P04, P05, P06, P07]
 
+  # Procesos para archivos de video
   video:
     target_table: videos_procesados
-    process_steps:
-      - audio_extraction
-      - thumbnail_extraction
-      - metadata_extraction
-      - face_detection
-      - facial_composite_extraction
-      - race_recognition
-      - face_matching
-      - object_detection
-      - ocr
-      - location_recognition
+    process_steps: 
+      # Procesos aplicados en orden utilizando las herramientas indicadas
+      # Incluye conversión de audio a texto para análisis completo de contenido
+      [P08, P21, P09, P10, P11, P12, P13, P14, P15, P16, P17]
 
+  # Procesos para imágenes
   image:
     target_table: imagenes_procesadas
-    process_steps:
-      - metadata_extraction
-      - face_detection
-      - facial_composite_extraction
-      - face_matching
-      - object_detection
-      - ocr
-      - location_recognition
+    process_steps: 
+      # Procesos aplicados en orden utilizando las herramientas indicadas
+      [P10, P11, P12, P14, P15, P16, P17]
 
+  # Procesos para documentos
   document:
     target_table: documentos_procesados
-    process_steps:
-      - indexing
-      - metadata_extraction
-      - ocr
-      - semantic_analysis
-      - enrichment
+    process_steps: 
+      # Procesos aplicados en orden utilizando las herramientas indicadas
+      [P18, P10, P16, P19, P20]
       
+# Configuración de bases de datos externas (externalDBs)
 externalDBs:
   - name: Migracion
-    engine: mssql  # Motor de la base de datos (PostgreSQL, MySQL, Oracle, etc.)
+    engine: mssql  # Motor de base de datos (opciones aceptadas: mssql, postgresql, mysql, oracle, db2)
     connection:
-      host: your_server_address
-      port: 1433  # Cambia según el motor de la base de datos (ej. 3306 para MySQL, 5432 para PostgreSQL)
-      username: your_username
-      password: your_password
-      database: your_database_name
-      driver: ODBC Driver 17 for SQL Server  # Solo para SQL Server (se puede omitir para otros motores)
+      host: your_server_address        # Dirección del servidor de la base de datos
+      port: 1433                       # Puerto del servidor (varía según el motor)
+      username: your_username          # Nombre de usuario para la conexión
+      password: your_password          # Contraseña de usuario
+      database: your_database_name     # Nombre de la base de datos
+      driver: ODBC Driver 17 for SQL Server  # Driver específico para SQL Server (opcional para otros motores)
     schedule:
       frequency: "1d"  # Frecuencia de sincronización diaria
-      time: "02:00"  # Hora de la sincronización diaria
+      time: "02:00"    # Hora de la sincronización diaria
     tables:
-      - movimientos_migratorios:
+      - movimientos_migratorios:       # Tabla que se sincroniza desde la base de datos externa
           schema:
             id_movimiento:
               type: SERIAL
@@ -85,12 +94,12 @@ externalDBs:
             dependencia:
               type: VARCHAR(255)
           ingestion:
-            strategy: replace  # La estrategia puede ser "replace" (reemplazar todos los datos) o "incremental" (solo nuevos registros)
-            key: id_movimiento  # Campo clave para detectar duplicados si es "incremental"
-            batch_size: 1000  # Tamaño de lotes a procesar en cada sincronización
-            filters:  # Filtros opcionales para la consulta
+            strategy: replace          # Estrategia de ingesta: "replace" (reemplazo) o "incremental"
+            key: id_movimiento         # Campo clave para la deduplicación si es incremental
+            batch_size: 1000           # Cantidad de registros procesados por lote
+            filters:                   # Filtros opcionales para seleccionar qué datos sincronizar
               - field: fecha_control
-                condition: ">"  # Condición para filtrar datos recientes
+                condition: ">"         # Condición para filtrar datos (ej. mayor que la fecha actual)
                 value: "CURRENT_DATE - INTERVAL '1 day'"
 
   - name: Compras
@@ -103,7 +112,7 @@ externalDBs:
       database: compras_db
     schedule:
       frequency: "7d"  # Sincronización semanal
-      time: "01:00"  # Hora de la sincronización semanal
+      time: "01:00"    # Hora de la sincronización semanal
     tables:
       - compras_clientes:
           schema:
@@ -121,27 +130,27 @@ externalDBs:
             fecha_compra:
               type: TIMESTAMP
           ingestion:
-            strategy: incremental
-            key: id_compra
-            batch_size: 500
-            filters:
+            strategy: incremental   # Estrategia de ingesta: "replace" (reemplazo) o "incremental"
+            key: id_compra          # Campo clave para la deduplicación si es incremental
+            batch_size: 500         # Cantidad de registros procesados por lote
+            filters:                # Filtros opcionales para seleccionar qué datos sincronizar
               - field: fecha_compra
                 condition: ">"
                 value: "CURRENT_DATE - INTERVAL '7 day'"
 
-# Fuentes de archivos
+# Fuentes de archivos (fileSources)
 fileSources:
   - name: FTP_Audios
-    source_type: ftp
+    source_type: ftp                # Tipo de fuente (opciones aceptadas: ftp, fileserver, s3, http)
     connection:
       host: ftp.audios.com
       port: 21
       username: ftp_user
       password: ftp_password
-    schedule: "0 4 * * *"
-    file_format: "audio"
+    schedule: "0 4 * * *"           # Programación en formato cron (ej. todos los días a las 4 AM)
+    file_format: "audio"            # Formato de los archivos en esta fuente (opciones: audio, video, image, document)
     ingestion:
-      file_path: /audios/  # No se especifica target_table, usa la tabla global "audios_procesados" de "processes"
+      file_path: /audios/           # Ruta en el servidor FTP de los archivos
 
   - name: FTP_Videos
     source_type: ftp
@@ -150,10 +159,10 @@ fileSources:
       port: 21
       username: ftp_user
       password: ftp_password
-    schedule: "0 3 * * *"
+    schedule: "0 3 * * *"           # Programación en formato cron (ej. todos los días a las 3 AM)
     file_format: "video"
     ingestion:
-      file_path: /videos/  # Al no especificar target_table, alimenta "videos_procesados" de la definición global
+      file_path: /videos/           # Ruta en el servidor FTP de los archivos
 
   - name: FTP_Custom_Videos
     source_type: ftp
@@ -165,8 +174,8 @@ fileSources:
     schedule: "0 5 * * *"
     file_format: "video"
     ingestion:
-      target_table: custom_videos  # Como especifica target_table, usa esta tabla específica
-      file_path: /custom_videos/  # Validación que esta tabla exista en externalDBs
+      target_table: custom_videos   # Como especifica target_table, usa esta tabla específica
+      file_path: /custom_videos/    # Validación que esta tabla exista en externalDBs
 
   - name: FTP_Documentos
     source_type: ftp
@@ -178,22 +187,22 @@ fileSources:
     schedule: "0 6 * * *"
     file_format: "document"
     ingestion:
-      file_path: /documentos/  # Sin target_table, usa "documentos_procesados" de la definición global
+      file_path: /documentos/        # Ruta en el servidor FTP de los archivos
 
 # Fuente para deltas de actualización (diferente tratamiento)
   - name: Personas_Delta
-    source_type: fileserver  # Puede ser un servidor de archivos o FTP
+    source_type: fileserver         # Tipo de fuente (ftp, fileserver)
     connection:
-      path: /mnt/deltas/personas/  # Ruta local o montada en el servidor
-    schedule: "0 3 * * *"  # Programación diaria a las 3 AM
-    file_format: "csv"  # Formato del archivo, que puede ser CSV o personalizado
+      path: /mnt/deltas/personas/    # Ruta local o montada en el servidor
+    schedule: "0 3 * * *"           # Programación diaria a las 3 AM
+    file_format: "csv"              # Formato del archivo, puede ser CSV u otro
     ingestion:
-      target_table: personas  # Aquí alimentamos directamente la tabla "personas"
-      delimiter: "|"  # Separador utilizado en los archivos de texto
-      batch_size: 1000  # Tamaño de los lotes para ingesta
-      key: id_persona  # Clave primaria para detectar duplicados
+      target_table: personas         # Aquí alimentamos directamente la tabla "personas"
+      delimiter: "|"                 # Separador utilizado en los archivos de texto
+      batch_size: 1000               # Tamaño de los lotes para ingesta
+      key: id_persona                # Clave primaria para detectar duplicados
       fields_mapping:
-        id_persona: 0  # Mapeo de las posiciones de los campos en el archivo
+        id_persona: 0               # Mapeo de las posiciones de los campos en el archivo
         nombres: 1
         paterno: 2
         materno: 3
@@ -201,9 +210,9 @@ fileSources:
         documento: 5
         numero_doc: 6
         fecha_nacimiento: 7
-      is_delta_update: true  # Indicamos que este es un delta para actualizar una tabla existente
+      is_delta_update: true          # Indicamos que este es un delta para actualizar una tabla existente
   
-  # Fuente para reemplazo total (diferente tratamiento)
+# Fuente para reemplazo total (diferente tratamiento)
   - name: MostWanted_Replacement
     source_type: ftp
     connection:
@@ -211,17 +220,17 @@ fileSources:
       port: 21
       username: ftp_user
       password: ftp_password
-    schedule: "0 2 1 * *"  # Programación mensual el día 1 de cada mes a las 2 AM
-    file_format: "csv"  # Formato del archivo
+    schedule: "0 2 1 * *"           # Reemplazo mensual el primer día de cada mes a las 2 AM
+    file_format: "csv"              # Formato del archivo
     ingestion:
-      target_table: most_wanted  # Tabla "most_wanted" en la que se reemplazarán los datos
-      delimiter: ","  # Separador utilizado en el archivo
-      batch_size: 500  # Tamaño de los lotes para ingesta
+      target_table: most_wanted      # Tabla "most_wanted" en la que se reemplazarán los datos
+      delimiter: ","                 # Separador utilizado en el archivo
+      batch_size: 500                # Tamaño de los lotes para ingesta
       fields_mapping:
-        id_persona: 0  # Mapeo de las posiciones de los campos en el archivo
+        id_persona: 0               # Mapeo de las posiciones de los campos en el archivo
         nombres: 1
         alias: 2
         delito: 3
         recompensa: 4
         nacionalidad: 5
-      is_replace: true  # Indicamos que este archivo reemplaza todos los datos de la tabla
+      is_replace: true               # Indicamos que este archivo reemplaza todos los datos de la tabla
