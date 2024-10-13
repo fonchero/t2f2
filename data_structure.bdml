@@ -1,0 +1,123 @@
+Project T2f2_Data {
+  database_type: "PostgreSQL"
+}
+
+Table archivos {
+  id SERIAL [pk]
+  nombre_archivo VARCHAR(255)
+  tipo_archivo VARCHAR(50) // 'audio', 'video', 'imagen', 'documento', etc.
+  ruta_archivo VARCHAR(500)
+  fuente VARCHAR(255) // Fuente de los archivos (FTP, FileServer, Redes Sociales)
+  descripcion TEXT // Descripción breve del archivo
+  tags VARCHAR[] // Etiquetas para mejorar la búsqueda
+  ubicacion VARCHAR(255) // Ubicación física o en el sistema
+  fecha_publicacion TIMESTAMP // Fecha en la que fue publicado el archivo (si aplica)
+  coordenadas_geograficas JSONB // Para almacenar la ubicación geográfica del archivo
+  fecha_ingreso TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+  estado VARCHAR(50) [default: 'pendiente'] // Estado de procesamiento
+
+  Indexes {
+    nombre_archivo
+  }
+}
+
+Table redes_sociales {
+  id_red_social SERIAL [pk]
+  id_archivo INT [ref: > archivos.id]
+  plataforma VARCHAR(50) // TikTok, Instagram, YouTube, Twitter
+  id_publicacion VARCHAR(255)
+  autor VARCHAR(255)
+  fecha_publicacion TIMESTAMP
+  hashtags VARCHAR[]
+  comentarios JSONB
+  likes INT
+  ubicacion VARCHAR(255)
+  url_post VARCHAR(500)
+  fecha_procesado TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+}
+
+Table personas_detectadas {
+  id_persona SERIAL [pk]
+  id_archivo INT [ref: > archivos.id]
+  nombre_asociado VARCHAR(255)
+  coordenadas_rostro JSONB
+  extracto_facial FLOAT[]
+  confianza_deteccion FLOAT
+  fecha_detectado TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+  id_persona_original INT
+  tipo_deteccion VARCHAR(50) // 'rostro', 'locutor', etc.
+  edad_aproximada INT
+  genero VARCHAR(50)
+
+  Indexes {
+    id_persona_original
+  }
+}
+
+Table objetos_detectados {
+  id_objeto SERIAL [pk]
+  id_archivo INT [ref: > archivos.id]
+  tipo_objeto VARCHAR(100) // Vehículo, edificio, etc.
+  coordenadas_objeto JSONB
+  fecha_detectado TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+}
+
+Table eventos {
+  id_evento SERIAL [pk]
+  nombre_evento VARCHAR(255)
+  descripcion TEXT
+  fecha_evento TIMESTAMP
+  ubicacion_evento VARCHAR(255)
+  tipo_evento VARCHAR(100) // Manifestación, conferencia, etc.
+}
+
+Table correlaciones {
+  id_correlacion SERIAL [pk]
+  id_archivo_origen INT [ref: > archivos.id]
+  id_archivo_relacionado INT [ref: > archivos.id]
+  id_persona INT [ref: > personas_detectadas.id_persona]
+  id_entidad INT [ref: > entidades_relacionadas.id_entidad]
+  id_evento INT [ref: > eventos.id_evento]
+  tipo_relacion VARCHAR(50) // 'mencionado en', 'aparece con', 'mismo lugar', etc.
+  tipo_correlacion VARCHAR(50)
+
+  Indexes {
+    id_entidad
+    id_evento
+  }
+}
+
+Table transcripciones {
+  id_transcripcion SERIAL [pk]
+  id_archivo INT [ref: > archivos.id]
+  texto_transcripcion TEXT
+  idioma_detectado VARCHAR(50)
+  numero_locutores INT
+  fecha_procesado TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+  embedding_locutor FLOAT[]
+  confianza_locutor FLOAT
+}
+
+Table entidades_relacionadas {
+  id_entidad SERIAL [pk]
+  nombre_entidad VARCHAR(255)
+  tipo_entidad VARCHAR(50) // Persona, organización, lugar, tema, etc.
+  descripcion TEXT
+  id_evento INT [ref: > eventos.id_evento]
+  fecha_aparicion TIMESTAMP
+}
+
+Table imagenes_procesadas {
+  id_imagen SERIAL [pk]
+  id_archivo INT [ref: > archivos.id]
+  metadatos JSONB
+  fecha_procesado TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+}
+
+Table videos_procesados {
+  id_video SERIAL [pk]
+  id_archivo INT [ref: > archivos.id]
+  duracion_segundos INT
+  metadatos JSONB
+  fecha_procesado TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+}
