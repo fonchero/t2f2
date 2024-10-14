@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: t2f2_postgres
+    env_file:
+      - .env  # Cargar todas las variables desde .env
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"  # Exponer el puerto desde las variables de entorno
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./t2f2-config.yaml:/app/t2f2-config.yaml
+      - ./groups:/app/t2f2-setting-up.py
+    networks:
+      - t2f2_network
+
+  python-service:
+    image: python:3.8
+    container_name: t2f2_python
+    env_file:
+      - .env  # Cargar las mismas variables de entorno
+    volumes:
+      - ./t2f2-config.yaml:/app/t2f2-config.yaml
+      - ./t2f2-setting-up.py:/app/t2f2-setting-up.py
+      - ./requirements.txt:/app/requirements.txt
+    networks:
+      - t2f2_network
+    depends_on:
+      - postgres
+    command: >
+      /bin/sh -c "pip install -r /app/requirements.txt && python /app/t2f2-setting-up.py"
+
+networks:
+  t2f2_network:
+    driver: bridge
