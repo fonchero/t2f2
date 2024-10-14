@@ -195,7 +195,7 @@ fileSources:
     connection:
       path: /mnt/deltas/personas/    # Ruta local o montada en el servidor
     schedule: "0 3 * * *"           # Programación diaria a las 3 AM
-    file_format: "csv"              # Formato del archivo, puede ser CSV u otro
+    file_format: "document"              # Formato del archivo, puede ser CSV u otro
     ingestion:
       target_table: personas         # Aquí alimentamos directamente la tabla "personas"
       delimiter: "|"                 # Separador utilizado en los archivos de texto
@@ -221,7 +221,7 @@ fileSources:
       username: ftp_user
       password: ftp_password
     schedule: "0 2 1 * *"           # Reemplazo mensual el primer día de cada mes a las 2 AM
-    file_format: "csv"              # Formato del archivo
+    file_format: "document"              # Formato del archivo
     ingestion:
       target_table: most_wanted      # Tabla "most_wanted" en la que se reemplazarán los datos
       delimiter: ","                 # Separador utilizado en el archivo
